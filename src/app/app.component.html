@@ -1,0 +1,30 @@
+<section>
+  <div class="container">
+    <div class="background-img">
+      <div class="box">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <div class="content">
+          <h2>ASCII Map Algorthm</h2>
+          <p>
+            In order to test assignment you can submit a
+            <strong>.txt file or paste code into textarea element</strong>
+          </p>
+          <form [formGroup]="appForm" (ngSubmit)="onSubmit()">
+            <figure class="form-group">
+              <label for="file">File</label>
+              <input type="file" id="file" (change)="handleFileInput($event.target.files)">
+            </figure>
+            <figure class="form-group">
+              <label for="textarea">Textarea</label>
+              <textarea id="textarea" rows="8" cols="57" formControlName="textArea"></textarea>
+            </figure>
+            <button type="submit" id="submitBtn">Submit form</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
