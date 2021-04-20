@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, throwError, isObservable } from 'rxjs';
+import { Observable, throwError, isObservable, from } from 'rxjs';
 import { Coordinates } from './coordinates';
 import { DIRECTIONS } from './direction.enum';
 import { MapRequest } from './map-request';
@@ -10,9 +10,8 @@ import { MapRequest } from './map-request';
 export class AppService {
 
   /* #region  Service variables */
-  algorithmMatrix: any[][];
-  firstStepActive: boolean = true;
-  nextStepDirection: string = "";
+  algorithmMatrix: any[][] = new Array();
+  nextStepDirection: string = "/";
   letters: string = "";
   /* #endregion */
 
@@ -45,9 +44,16 @@ export class AppService {
     //if multiple or no start throw observable error msg
     if (isObservable(start)) return start;
     let currentPosition = start;
-    while (true) {
-      this.getNextCharacter(currentPosition.x, currentPosition.y)
+
+    // todo
+    let it = 0;
+    while (it < 3) {
+      console.log(this.getCharacter(currentPosition.y, currentPosition.x))
+      this.letters += this.getCharacter(currentPosition.y, currentPosition.x);
+      it++;
     }
+    console.log(this.letters)
+    return from(["ok"]);
   }
 
   /*
@@ -60,8 +66,7 @@ export class AppService {
     const arrayOfLines = algorithm.split(/\r\n|\r|\n/);
     // rows
     const linesInAlgorithm = arrayOfLines.length;
-    // first push for initialization of []
-    this.algorithmMatrix = new Array(arrayOfLines);
+
     for (let x = 0; x < linesInAlgorithm; x++) {
       this.algorithmMatrix[x] = new Array(arrayOfLines[x].length);
       for (let y = 0; y < arrayOfLines[x].length; y++) {
@@ -80,7 +85,7 @@ export class AppService {
     this.algorithmMatrix.forEach((row, y) => {
       const x = row.findIndex(element => element === "@");
       if (x > -1) {
-        startCoordinates = [...startCoordinates, { x, y }];
+        startCoordinates = [...startCoordinates, { y, x }];
       }
     });
     // in case of multiple starts throw error
@@ -89,41 +94,71 @@ export class AppService {
     } else if (!startCoordinates.length) {
       return throwError("No start")
     }
+    this.letters = "@"
     return startCoordinates[0];
   }
 
   /*
-  check if its letter or character
-  if letter, find direction and next one
-  if character(other than @) find next one
+    check if its letter or character
+    if letter, find direction and next one
+    if character(other than @) find next one
   */
-  getNextCharacter(x: number, y: number) {
-    if (this.firstStepActive) {
-      this.lookLeftOrRight(x, y);
-    }
+  getCharacter(x: number, y: number) {
+    return this.getFurtherDirAndChar(x, y);
   }
 
-  lookTopOrBottom(x: number, y: number): string | boolean {
-    if (this.algorithmMatrix[x][y + 1] === DIRECTIONS.downOrUp) {
+  getFurtherDirAndChar(x: number, y: number) {
+    let char: string;
+    if (this.nextStepDirection === "L") {
+      char = <string>this.lookLeft(x, y);
+      console.log("usao lijevo")
+    } else if (this.nextStepDirection === "R") {
+      char = <string>this.lookRight(x, y);
+      console.log("usao desno")
+    } else if (this.nextStepDirection === "T") {
+      char = <string>this.lookTop(x, y);
+    } else if (this.nextStepDirection === "B") {
+      char = <string>this.lookBottom(x, y);
+    } else {
+      console.log("nisi smio tu uc")
+      char = this.lookLeft(x, y)
+        ? <string>this.lookLeft(x, y) : this.lookRight(x, y)
+          ? <string>this.lookRight(x, y) : this.lookTop(x, y)
+            ? <string>this.lookTop(x, y) : this.lookBottom(x, y)
+              ? <string>this.lookBottom(x, y) : "";
+    }
+    return char;
+  }
+
+
+  lookTop(x: number, y: number): string | boolean {
+    if (this.algorithmMatrix[x + 1] && this.algorithmMatrix[x + 1][y] === DIRECTIONS.downOrUp) {
       this.nextStepDirection = "T";
       return this.algorithmMatrix[x][y + 1];
-    } else if (this.algorithmMatrix[x][y - 1] === DIRECTIONS.downOrUp) {
-      this.nextStepDirection = "B";
-      return this.algorithmMatrix[x][y - 1];
-    } else {
-      return false;
     }
+    return false;
   }
 
-  lookLeftOrRight(x: number, y: number): string | boolean {
-    if (this.algorithmMatrix[x + 1][y] === DIRECTIONS.leftOrRight) {
-      this.nextStepDirection = "R";
-      return this.algorithmMatrix[x + 1][y];
-    } else if (this.algorithmMatrix[x - 1][y] === DIRECTIONS.leftOrRight) {
-      this.nextStepDirection = "L";
+  lookBottom(x: number, y: number): string | boolean {
+    if (this.algorithmMatrix[x - 1] && this.algorithmMatrix[x - 1][y] === DIRECTIONS.downOrUp) {
+      this.nextStepDirection = "B";
       return this.algorithmMatrix[x - 1][y];
-    } else {
-      return false;
+    }
+    return false;
+  }
+
+  lookLeft(x: number, y: number): string | boolean {
+    if (this.algorithmMatrix[x][y - 1] && this.algorithmMatrix[x][y - 1] === DIRECTIONS.leftOrRight) {
+      this.nextStepDirection = "L";
+      return this.algorithmMatrix[x][y - 1];
+    }
+    return false;
+  }
+
+  lookRight(x: number, y: number): string | boolean {
+    if (this.algorithmMatrix[x][y + 1] && this.algorithmMatrix[x][y + 1] === DIRECTIONS.leftOrRight) {
+      this.nextStepDirection = "R";
+      return this.algorithmMatrix[x][y + 1];
     }
   }
 
