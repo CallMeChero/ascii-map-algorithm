@@ -119,19 +119,43 @@ export class AppService {
     let char: string;
     if (this.nextStepDirection === "L") {
       char = <string>this.lookLeft(x, y);
-      if (!char) { char = <string>this.lookLeft(x, y - 1) }
+      if (!char) {
+        char = <string>this.lookLeft(x, y - 1);
+        if (!char) {
+          this.nextStepDirection = "/";
+          return this.searchAllDirections(x, y)
+        }
+      }
       return char;
     } else if (this.nextStepDirection === "R") {
       char = <string>this.lookRight(x, y);
-      if (!char) { char = <string>this.lookRight(x, y + 1) }
+      if (!char) {
+        char = <string>this.lookRight(x, y + 1);
+        if (!char) {
+          this.nextStepDirection = "/";
+          return this.searchAllDirections(x, y)
+        }
+      }
       return char;
     } else if (this.nextStepDirection === "T") {
       char = <string>this.lookTop(x, y);
-      if (!char) { char = <string>this.lookTop(x - 1, y) }
+      if (!char) {
+        char = <string>this.lookTop(x - 1, y);
+        if (!char) {
+          this.nextStepDirection = "/";
+          return this.searchAllDirections(x, y)
+        }
+      }
       return char;
     } else if (this.nextStepDirection === "B") {
       char = <string>this.lookBottom(x, y);
-      if (!char) { char = <string>this.lookBottom(x + 1, y) }
+      if (!char) {
+        char = <string>this.lookBottom(x + 1, y);
+        if (!char) {
+          this.nextStepDirection = "/";
+          return this.searchAllDirections(x, y)
+        }
+      }
       return char;
     } else {
       return this.searchAllDirections(x, y);
@@ -139,46 +163,48 @@ export class AppService {
   }
 
   searchAllDirections(x, y) {
-    const charL = this.lookLeft(x, y);
-    const charR = this.lookRight(x, y);
-    const charT = this.lookTop(x, y);
-    const charB = this.lookBottom(x, y);
+    let charT;
+    let charB;
+    let charR;
+    let charL;
+
+    charL = this.lookLeft(x, y);
+    charR = this.lookRight(x, y);
+    charT = this.lookTop(x, y);
+    charB = this.lookBottom(x, y);
+
+    if (!charL && !charR && !charT && !charB) {
+      charL = this.lookLeft(x, y - 1);
+      charR = this.lookRight(x, y + 1);
+      charT = this.lookTop(x - 1, y);
+      charB = this.lookBottom(x + 1, y);
+    }
     return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : "";
   }
 
   lookBottom(x: number, y: number): string | boolean {
     if (this.matrix[x + 1] && !this.checkIfWasHere({ x: x + 1, y })) {
-      if (this.matrix[x + 1][y] === DIRECTIONS.downOrUp) {
+      if (this.matrix[x + 1][y] === DIRECTIONS.downOrUp || /^[A-Z]+$/.test(this.matrix[x + 1][y])) {
         return this.setPositionAndDirection(x + 1, y, "B");
       } else if (this.matrix[x + 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x + 1, y, "/");
-      } else if (/^[A-Z]+$/.test(this.matrix[x + 1][y])) {
-        return this.setPositionAndDirection(x + 1, y, "B");
       } else if (this.matrix[x + 1][y] === "x") {
         return this.setPositionAndDirection(x + 1, y, "end");
-      } else {
-        return false;
       }
     }
-    if (this.matrix[x + 1] && /^[A-Z]+$/.test(this.matrix[x + 1][y]) && this.checkIfWasHere({ x: x + 1, y })) { this.nextStepDirection = "B"; }
     return false;
   }
 
   lookTop(x: number, y: number): string | boolean {
     if (this.matrix[x - 1] && !this.checkIfWasHere({ x: x - 1, y })) {
-      if (this.matrix[x - 1][y] === DIRECTIONS.downOrUp) {
+      if (this.matrix[x - 1][y] === DIRECTIONS.downOrUp || /^[A-Z]+$/.test(this.matrix[x - 1][y])) {
         return this.setPositionAndDirection(x - 1, y, "T");
       } else if (this.matrix[x - 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x - 1, y, "/");
       } else if (this.matrix[x - 1][y] === "x") {
         return this.setPositionAndDirection(x - 1, y, "end");
-      } else if (/^[A-Z]+$/.test(this.matrix[x - 1][y])) {
-        return this.setPositionAndDirection(x - 1, y, "T");
-      } else {
-        return false;
       }
     }
-    if (this.matrix[x - 1] && /^[A-Z]+$/.test(this.matrix[x - 1][y]) && this.checkIfWasHere({ x: x - 1, y })) { this.nextStepDirection = "T"; }
     return false;
   }
 
@@ -186,35 +212,26 @@ export class AppService {
     if (this.matrix[x][y - 1] && !this.checkIfWasHere({ x, y: y - 1 })) {
       if (this.matrix[x][y - 1] === DIRECTIONS.leftOrRight) {
         return this.setPositionAndDirection(x, y - 1, "L");
-      } else if (this.matrix[x][y - 1] === DIRECTIONS.corner) {
+      } else if (this.matrix[x][y - 1] === DIRECTIONS.corner || /^[A-Z]+$/.test(this.matrix[x][y - 1])) {
         return this.setPositionAndDirection(x, y - 1, "/");
-      } else if (/^[A-Z]+$/.test(this.matrix[x][y - 1])) {
-        return this.setPositionAndDirection(x, y - 1, "L");
       } else if (this.matrix[x][y - 1] === "x") {
         return this.setPositionAndDirection(x, y - 1, "end");
-      } else {
-        return false;
       }
+    } else {
+      return false;
     }
-    if (/^[A-Z]+$/.test(this.matrix[x][y - 1]) && this.checkIfWasHere({ x, y: y - 1 })) { this.nextStepDirection = "L"; }
-    return false;
   }
 
   lookRight(x: number, y: number): string | boolean {
     if (this.matrix[x][y + 1] && !this.checkIfWasHere({ x, y: y + 1 })) {
-      if (this.matrix[x][y + 1] === DIRECTIONS.leftOrRight) {
+      if (this.matrix[x][y + 1] === DIRECTIONS.leftOrRight || /^[A-Z]+$/.test(this.matrix[x][y + 1])) {
         return this.setPositionAndDirection(x, y + 1, "R");
       } else if (this.matrix[x][y + 1] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x, y + 1, "/");
       } else if (this.matrix[x][y + 1] === "x") {
         return this.setPositionAndDirection(x, y + 1, "end");
-      } else if (/^[A-Z]+$/.test(this.matrix[x][y + 1])) {
-        return this.setPositionAndDirection(x, y + 1, "R");
-      } else {
-        return false;
       }
     }
-    if (/^[A-Z]+$/.test(this.matrix[x][y + 1]) && this.checkIfWasHere({ x, y: y + 1 })) { this.nextStepDirection = "R"; }
     return false;
   }
 
@@ -222,6 +239,7 @@ export class AppService {
     this.nextStepDirection = direction;
     this.latestPosition = { x, y };
     this.visitedCoordinates = [...this.visitedCoordinates, this.latestPosition];
+    console.log(this.matrix[x][y])
     return this.matrix[x][y];
   }
 
