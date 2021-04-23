@@ -14,6 +14,7 @@ export class AppService {
   nextStepDirection: string;
   latestPosition: Coordinates;
   letters: string = "";
+  previouslyVisited: Coordinates[] = [];
   /* #endregion */
 
   /* #region  Service methods */
@@ -48,12 +49,11 @@ export class AppService {
     this.latestPosition = start;
     // todo
     let it = 0;
-    while (it < algorithm.length && this.nextStepDirection !== "end") {
-      this.letters += this.findCharacter(this.latestPosition.x, this.latestPosition.y);
+    while (it < algorithm.length) {
+      this.letters += this.getFurtherDirAndChar(this.latestPosition.x, this.latestPosition.y);
       it++;
     }
-    console.log(this.letters)
-    return from(["ok"]);
+    return from([this.letters.replace(/false/g, "")]);
   }
 
   /*
@@ -86,7 +86,6 @@ export class AppService {
     this.algorithmMatrix.forEach((row, y) => {
       const x = row.findIndex(element => element === "@");
       const end = row.findIndex(element => element === "x");
-      console.log(end)
       if (x > -1) {
         startCoordinates = [...startCoordinates, { y, x }];
       }
@@ -108,15 +107,6 @@ export class AppService {
     return startCoordinates[0];
   }
 
-  /*
-    check if its letter or character
-    if letter, find direction and next one
-    if character(other than @) find next one
-  */
-  findCharacter(x: number, y: number) {
-    return this.getFurtherDirAndChar(x, y);
-  }
-
   getFurtherDirAndChar(x: number, y: number) {
     let char: string;
     if (this.nextStepDirection === "L") {
@@ -127,9 +117,12 @@ export class AppService {
       console.log("usao desno")
     } else if (this.nextStepDirection === "T") {
       char = <string>this.lookTop(x, y);
+      console.log("usao gore")
     } else if (this.nextStepDirection === "B") {
       char = <string>this.lookBottom(x, y);
+      console.log("usao dole")
     } else {
+      console.log("usao u else", this.previouslyVisited, { x, y })
       char = this.lookLeft(x, y)
         ? <string>this.lookLeft(x, y) : this.lookRight(x, y)
           ? <string>this.lookRight(x, y) : this.lookTop(x, y)
@@ -140,24 +133,28 @@ export class AppService {
   }
 
 
-  lookTop(x: number, y: number): string | boolean {
+  lookBottom(x: number, y: number): string | boolean {
     // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x + 1]) {
+    if (this.algorithmMatrix[x + 1] && !this.checkIfWasHere({ x: x + 1, y })) {
       if (this.algorithmMatrix[x + 1][y] === DIRECTIONS.downOrUp) {
-        this.nextStepDirection = "T";
+        this.nextStepDirection = "B";
         this.latestPosition = { x: x + 1, y: y }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x + 1][y];
       } else if (this.algorithmMatrix[x + 1][y] === DIRECTIONS.corner) {
         this.nextStepDirection = "/";
         this.latestPosition = { x: x + 1, y: y }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x + 1][y];
-      } else if (this.nextStepDirection === "T") {
+      } else if (this.nextStepDirection === "B") {
         if (/^[a-zA-Z]+$/.test(this.algorithmMatrix[x + 1][y])) {
           this.latestPosition = { x: x + 1, y: y }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x + 1][y];
         } else if (this.algorithmMatrix[x + 1][y] === "x") {
           this.nextStepDirection = "end";
           this.latestPosition = { x: x + 1, y: y }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x + 1][y];
         }
       } else {
@@ -167,24 +164,28 @@ export class AppService {
     return false;
   }
 
-  lookBottom(x: number, y: number): string | boolean {
+  lookTop(x: number, y: number): string | boolean {
     // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x - 1]) {
+    if (this.algorithmMatrix[x - 1] && !this.checkIfWasHere({ x: x - 1, y })) {
       if (this.algorithmMatrix[x - 1][y] === DIRECTIONS.downOrUp) {
-        this.nextStepDirection = "B";
+        this.nextStepDirection = "T";
         this.latestPosition = { x: x - 1, y: y }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x - 1][y];
       } else if (this.algorithmMatrix[x - 1][y] === DIRECTIONS.corner) {
         this.nextStepDirection = "/";
         this.latestPosition = { x: x - 1, y: y }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x - 1][y];
-      } else if (this.nextStepDirection === "B") {
+      } else if (this.nextStepDirection === "T") {
         if (/^[a-zA-Z]+$/.test(this.algorithmMatrix[x - 1][y])) {
           this.latestPosition = { x: x - 1, y: y }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x - 1][y];
         } else if (this.algorithmMatrix[x - 1][y] === "x") {
           this.nextStepDirection = "end";
           this.latestPosition = { x: x - 1, y: y }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x - 1][y];
         }
       } else {
@@ -195,23 +196,26 @@ export class AppService {
   }
 
   lookLeft(x: number, y: number): string | boolean {
-    // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x][y - 1]) {
+    if (this.algorithmMatrix[x][y - 1] && !this.checkIfWasHere({ x, y: y - 1 })) {
       if (this.algorithmMatrix[x][y - 1] === DIRECTIONS.leftOrRight) {
         this.nextStepDirection = "L";
         this.latestPosition = { x: x, y: y - 1 }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x][y - 1];
       } else if (this.algorithmMatrix[x][y - 1] === DIRECTIONS.corner) {
         this.nextStepDirection = "/";
         this.latestPosition = { x: x, y: y - 1 }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x][y - 1];
       } else if (this.nextStepDirection === "L") {
         if (/^[a-zA-Z]+$/.test(this.algorithmMatrix[x][y - 1])) {
           this.latestPosition = { x: x, y: y - 1 }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x][y - 1];
         } else if (this.algorithmMatrix[x][y - 1] === "x") {
           this.nextStepDirection = "end";
           this.latestPosition = { x: x, y: y - 1 }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x][y - 1];
         }
       } else {
@@ -222,23 +226,26 @@ export class AppService {
   }
 
   lookRight(x: number, y: number): string | boolean {
-    // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x][y + 1]) {
+    if (this.algorithmMatrix[x][y + 1] && !this.checkIfWasHere({ x, y: y + 1 })) {
       if (this.algorithmMatrix[x][y + 1] === DIRECTIONS.leftOrRight) {
         this.nextStepDirection = "R";
         this.latestPosition = { x: x, y: y + 1 }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x][y + 1];
       } else if (this.algorithmMatrix[x][y + 1] === DIRECTIONS.corner) {
         this.nextStepDirection = "/";
         this.latestPosition = { x: x, y: y + 1 }
+        this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
         return this.algorithmMatrix[x][y + 1];
       } else if (this.nextStepDirection === "R") {
         if (/^[a-zA-Z]+$/.test(this.algorithmMatrix[x][y + 1])) {
           this.latestPosition = { x: x, y: y + 1 }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x][y + 1];
         } else if (this.algorithmMatrix[x][y + 1] === "x") {
           this.nextStepDirection = "end";
           this.latestPosition = { x: x, y: y + 1 }
+          this.previouslyVisited = [...this.previouslyVisited, this.latestPosition];
           return this.algorithmMatrix[x][y + 1];
         }
       } else {
@@ -246,6 +253,14 @@ export class AppService {
       }
     }
     return false;
+  }
+
+  checkIfWasHere(currentPosition: Coordinates): boolean {
+    if (this.previouslyVisited.find(item => item.x === currentPosition.x && item.y === currentPosition.y)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /* #endregion */
