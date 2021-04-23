@@ -55,8 +55,10 @@ export class AppService {
     const start = this.getStartCoordinates();
     if (isObservable(start)) return start;
     this.latestPosition = start;
-    while (this.nextStepDirection !== "end") {
+    let i = 0;
+    while (i < algorithm.length && this.nextStepDirection !== "end") {
       this.letters += this.getFurtherDirAndChar(this.latestPosition.x, this.latestPosition.y);
+      i++;
     }
     return from([this.letters]);
   }
@@ -117,25 +119,32 @@ export class AppService {
     let char: string;
     if (this.nextStepDirection === "L") {
       char = <string>this.lookLeft(x, y);
+      if (!char) { char = <string>this.lookLeft(x, y - 1) }
       return char;
     } else if (this.nextStepDirection === "R") {
       char = <string>this.lookRight(x, y);
+      if (!char) { char = <string>this.lookRight(x, y + 1) }
       return char;
     } else if (this.nextStepDirection === "T") {
       char = <string>this.lookTop(x, y);
+      if (!char) { char = <string>this.lookTop(x - 1, y) }
       return char;
     } else if (this.nextStepDirection === "B") {
       char = <string>this.lookBottom(x, y);
+      if (!char) { char = <string>this.lookBottom(x + 1, y) }
       return char;
     } else {
-      const charL = this.lookLeft(x, y);
-      const charR = this.lookRight(x, y);
-      const charT = this.lookTop(x, y);
-      const charB = this.lookBottom(x, y);
-      return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : undefined;
+      return this.searchAllDirections(x, y);
     }
   }
 
+  searchAllDirections(x, y) {
+    const charL = this.lookLeft(x, y);
+    const charR = this.lookRight(x, y);
+    const charT = this.lookTop(x, y);
+    const charB = this.lookBottom(x, y);
+    return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : "";
+  }
 
   lookBottom(x: number, y: number): string | boolean {
     if (this.matrix[x + 1] && !this.checkIfWasHere({ x: x + 1, y })) {
@@ -143,16 +152,15 @@ export class AppService {
         return this.setPositionAndDirection(x + 1, y, "B");
       } else if (this.matrix[x + 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x + 1, y, "/");
-      } else if (this.nextStepDirection === "B") {
-        if (/^[A-Z]+$/.test(this.matrix[x + 1][y])) {
-          return this.setPositionAndDirection(x + 1, y, "B");
-        } else if (this.matrix[x + 1][y] === "x") {
-          return this.setPositionAndDirection(x + 1, y, "end");
-        }
+      } else if (/^[A-Z]+$/.test(this.matrix[x + 1][y])) {
+        return this.setPositionAndDirection(x + 1, y, "B");
+      } else if (this.matrix[x + 1][y] === "x") {
+        return this.setPositionAndDirection(x + 1, y, "end");
       } else {
         return false;
       }
     }
+    if (this.matrix[x + 1] && /^[A-Z]+$/.test(this.matrix[x + 1][y]) && this.checkIfWasHere({ x: x + 1, y })) { this.nextStepDirection = "B"; }
     return false;
   }
 
@@ -162,16 +170,15 @@ export class AppService {
         return this.setPositionAndDirection(x - 1, y, "T");
       } else if (this.matrix[x - 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x - 1, y, "/");
-      } else if (this.nextStepDirection === "T") {
-        if (/^[A-Z]+$/.test(this.matrix[x - 1][y])) {
-          return this.setPositionAndDirection(x - 1, y, "T");
-        } else if (this.matrix[x - 1][y] === "x") {
-          return this.setPositionAndDirection(x - 1, y, "end");
-        }
+      } else if (this.matrix[x - 1][y] === "x") {
+        return this.setPositionAndDirection(x - 1, y, "end");
+      } else if (/^[A-Z]+$/.test(this.matrix[x - 1][y])) {
+        return this.setPositionAndDirection(x - 1, y, "T");
       } else {
         return false;
       }
     }
+    if (this.matrix[x - 1] && /^[A-Z]+$/.test(this.matrix[x - 1][y]) && this.checkIfWasHere({ x: x - 1, y })) { this.nextStepDirection = "T"; }
     return false;
   }
 
@@ -181,16 +188,15 @@ export class AppService {
         return this.setPositionAndDirection(x, y - 1, "L");
       } else if (this.matrix[x][y - 1] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x, y - 1, "/");
-      } else if (this.nextStepDirection === "L") {
-        if (/^[A-Z]+$/.test(this.matrix[x][y - 1])) {
-          return this.setPositionAndDirection(x, y - 1, "L");
-        } else if (this.matrix[x][y - 1] === "x") {
-          return this.setPositionAndDirection(x, y - 1, "end");
-        }
+      } else if (/^[A-Z]+$/.test(this.matrix[x][y - 1])) {
+        return this.setPositionAndDirection(x, y - 1, "L");
+      } else if (this.matrix[x][y - 1] === "x") {
+        return this.setPositionAndDirection(x, y - 1, "end");
       } else {
         return false;
       }
     }
+    if (/^[A-Z]+$/.test(this.matrix[x][y - 1]) && this.checkIfWasHere({ x, y: y - 1 })) { this.nextStepDirection = "L"; }
     return false;
   }
 
@@ -200,16 +206,15 @@ export class AppService {
         return this.setPositionAndDirection(x, y + 1, "R");
       } else if (this.matrix[x][y + 1] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x, y + 1, "/");
-      } else if (this.nextStepDirection === "R") {
-        if (/^[A-Z]+$/.test(this.matrix[x][y + 1])) {
-          return this.setPositionAndDirection(x, y + 1, "R");
-        } else if (this.matrix[x][y + 1] === "x") {
-          return this.setPositionAndDirection(x, y + 1, "end");
-        }
+      } else if (this.matrix[x][y + 1] === "x") {
+        return this.setPositionAndDirection(x, y + 1, "end");
+      } else if (/^[A-Z]+$/.test(this.matrix[x][y + 1])) {
+        return this.setPositionAndDirection(x, y + 1, "R");
       } else {
         return false;
       }
     }
+    if (/^[A-Z]+$/.test(this.matrix[x][y + 1]) && this.checkIfWasHere({ x, y: y + 1 })) { this.nextStepDirection = "R"; }
     return false;
   }
 
