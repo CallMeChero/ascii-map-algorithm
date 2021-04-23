@@ -10,28 +10,28 @@ import { MapRequest } from './map-request';
 export class AppService {
 
   /* #region  Service variables */
-  algorithmMatrix: any[][] = new Array();
+  matrix: any[][] = new Array();
   nextStepDirection: string;
   latestPosition: Coordinates;
   letters: string = "";
   visitedCoordinates: Coordinates[] = [];
   /* #endregion */
 
+
   /* #region  Service methods */
-  // Submit map method
+
+  /*
+    check if form data is file or textarea
+    in case of form file read its content as string
+  */
   submitASCIIMap(formData: MapRequest): Observable<string> {
-    //re-init for new api call
     this.nextStepDirection = "/";
     this.letters = "";
     this.visitedCoordinates = [];
 
-    if (formData.file && formData.file.type !== "text/plain") return throwError("File type has to be .txt ~ text.plain");
-    return this.solveMapAlgorithm(formData);
-  }
-
-  solveMapAlgorithm(formData: MapRequest): Observable<string> {
     if (formData.file) {
       //input file
+      if (formData.file && formData.file.type !== "text/plain") return throwError("File type has to be .txt ~ text.plain");
       const reader = new FileReader();
       reader.onload = () => {
         const content = reader.result;
@@ -44,16 +44,19 @@ export class AppService {
     }
   }
 
-
+  /*
+    form [][]
+    get start coordinates, if its observable then its error
+    loop until next step direction is "end" -> x
+    return observable of letters
+  */
   parseAlgorithm(algorithm: string): Observable<string> {
     this.formTwoDimensionalArray(algorithm);
     const start = this.getStartCoordinates();
-    //if multiple or no start throw observable error msg
     if (isObservable(start)) return start;
     this.latestPosition = start;
-    // todo
     while (this.nextStepDirection !== "end") {
-      this.letters += this.findCharacter(this.latestPosition.x, this.latestPosition.y);
+      this.letters += this.getFurtherDirAndChar(this.latestPosition.x, this.latestPosition.y);
     }
     return from([this.letters]);
   }
@@ -64,29 +67,25 @@ export class AppService {
     make [][]
   */
   formTwoDimensionalArray(algorithm: string): void {
-    // split
     const arrayOfLines = algorithm.split(/\r\n|\r|\n/);
-    // rows
     const linesInAlgorithm = arrayOfLines.length;
 
     for (let x = 0; x < linesInAlgorithm; x++) {
-      this.algorithmMatrix[x] = new Array(arrayOfLines[x].length);
+      this.matrix[x] = new Array(arrayOfLines[x].length);
       for (let y = 0; y < arrayOfLines[x].length; y++) {
-        this.algorithmMatrix[x][y] = arrayOfLines[x][y];
+        this.matrix[x][y] = arrayOfLines[x][y];
       }
     }
-    console.log(this.algorithmMatrix)
   }
 
   /*
-   find out where is start
+   find out where is start & end
    in case of error throw it
   */
   getStartCoordinates(): Coordinates | Observable<never> {
-    // find out where is algorithm starting
     let startCoordinates = [];
     let endOccurences = 0;
-    this.algorithmMatrix.forEach((row, x) => {
+    this.matrix.forEach((row, x) => {
       const y = row.findIndex(element => element === "@");
       const end = row.findIndex(element => element === "x");
       if (y > -1) {
@@ -96,7 +95,7 @@ export class AppService {
         endOccurences++;
       }
     });
-    // in case of multiple starts throw error
+    // in case of multiple starts or ends throw error
     if (startCoordinates.length > 1) {
       return throwError("Multiple starts")
     } else if (!startCoordinates.length) {
@@ -111,15 +110,10 @@ export class AppService {
   }
 
   /*
-    check if its letter or character
-    if letter, find direction and next one
-    if character(other than @) find next one
+    check if previous direction
+    in case of '/' look for all
   */
-  findCharacter(x: number, y: number) {
-    return this.getFurtherDirAndChar(x, y);
-  }
-
-  getFurtherDirAndChar(x: number, y: number) {
+  getFurtherDirAndChar(x: number, y: number): string {
     let char: string;
     if (this.nextStepDirection === "L") {
       char = <string>this.lookLeft(x, y);
@@ -134,26 +128,25 @@ export class AppService {
       char = <string>this.lookBottom(x, y);
       return char;
     } else {
-      let charL = this.lookLeft(x, y);
-      let charR = this.lookRight(x, y);
-      let charT = this.lookTop(x, y);
-      let charB = this.lookBottom(x, y);
-      return charL ? charL : charB ? charB : charT ? charT : charR ? charR : undefined;
+      const charL = this.lookLeft(x, y);
+      const charR = this.lookRight(x, y);
+      const charT = this.lookTop(x, y);
+      const charB = this.lookBottom(x, y);
+      return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : undefined;
     }
   }
 
 
   lookBottom(x: number, y: number): string | boolean {
-    // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x + 1] && !this.checkIfWasHere({ x: x + 1, y })) {
-      if (this.algorithmMatrix[x + 1][y] === DIRECTIONS.downOrUp) {
+    if (this.matrix[x + 1] && !this.checkIfWasHere({ x: x + 1, y })) {
+      if (this.matrix[x + 1][y] === DIRECTIONS.downOrUp) {
         return this.setPositionAndDirection(x + 1, y, "B");
-      } else if (this.algorithmMatrix[x + 1][y] === DIRECTIONS.corner) {
+      } else if (this.matrix[x + 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x + 1, y, "/");
       } else if (this.nextStepDirection === "B") {
-        if (/^[A-Z]+$/.test(this.algorithmMatrix[x + 1][y])) {
+        if (/^[A-Z]+$/.test(this.matrix[x + 1][y])) {
           return this.setPositionAndDirection(x + 1, y, "B");
-        } else if (this.algorithmMatrix[x + 1][y] === "x") {
+        } else if (this.matrix[x + 1][y] === "x") {
           return this.setPositionAndDirection(x + 1, y, "end");
         }
       } else {
@@ -164,16 +157,15 @@ export class AppService {
   }
 
   lookTop(x: number, y: number): string | boolean {
-    // fails in case of undefined and EMPTY string
-    if (this.algorithmMatrix[x - 1] && !this.checkIfWasHere({ x: x - 1, y })) {
-      if (this.algorithmMatrix[x - 1][y] === DIRECTIONS.downOrUp) {
+    if (this.matrix[x - 1] && !this.checkIfWasHere({ x: x - 1, y })) {
+      if (this.matrix[x - 1][y] === DIRECTIONS.downOrUp) {
         return this.setPositionAndDirection(x - 1, y, "T");
-      } else if (this.algorithmMatrix[x - 1][y] === DIRECTIONS.corner) {
+      } else if (this.matrix[x - 1][y] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x - 1, y, "/");
       } else if (this.nextStepDirection === "T") {
-        if (/^[A-Z]+$/.test(this.algorithmMatrix[x - 1][y])) {
+        if (/^[A-Z]+$/.test(this.matrix[x - 1][y])) {
           return this.setPositionAndDirection(x - 1, y, "T");
-        } else if (this.algorithmMatrix[x - 1][y] === "x") {
+        } else if (this.matrix[x - 1][y] === "x") {
           return this.setPositionAndDirection(x - 1, y, "end");
         }
       } else {
@@ -184,15 +176,15 @@ export class AppService {
   }
 
   lookLeft(x: number, y: number): string | boolean {
-    if (this.algorithmMatrix[x][y - 1] && !this.checkIfWasHere({ x, y: y - 1 })) {
-      if (this.algorithmMatrix[x][y - 1] === DIRECTIONS.leftOrRight) {
+    if (this.matrix[x][y - 1] && !this.checkIfWasHere({ x, y: y - 1 })) {
+      if (this.matrix[x][y - 1] === DIRECTIONS.leftOrRight) {
         return this.setPositionAndDirection(x, y - 1, "L");
-      } else if (this.algorithmMatrix[x][y - 1] === DIRECTIONS.corner) {
+      } else if (this.matrix[x][y - 1] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x, y - 1, "/");
       } else if (this.nextStepDirection === "L") {
-        if (/^[A-Z]+$/.test(this.algorithmMatrix[x][y - 1])) {
+        if (/^[A-Z]+$/.test(this.matrix[x][y - 1])) {
           return this.setPositionAndDirection(x, y - 1, "L");
-        } else if (this.algorithmMatrix[x][y - 1] === "x") {
+        } else if (this.matrix[x][y - 1] === "x") {
           return this.setPositionAndDirection(x, y - 1, "end");
         }
       } else {
@@ -203,15 +195,15 @@ export class AppService {
   }
 
   lookRight(x: number, y: number): string | boolean {
-    if (this.algorithmMatrix[x][y + 1] && !this.checkIfWasHere({ x, y: y + 1 })) {
-      if (this.algorithmMatrix[x][y + 1] === DIRECTIONS.leftOrRight) {
+    if (this.matrix[x][y + 1] && !this.checkIfWasHere({ x, y: y + 1 })) {
+      if (this.matrix[x][y + 1] === DIRECTIONS.leftOrRight) {
         return this.setPositionAndDirection(x, y + 1, "R");
-      } else if (this.algorithmMatrix[x][y + 1] === DIRECTIONS.corner) {
+      } else if (this.matrix[x][y + 1] === DIRECTIONS.corner) {
         return this.setPositionAndDirection(x, y + 1, "/");
       } else if (this.nextStepDirection === "R") {
-        if (/^[A-Z]+$/.test(this.algorithmMatrix[x][y + 1])) {
+        if (/^[A-Z]+$/.test(this.matrix[x][y + 1])) {
           return this.setPositionAndDirection(x, y + 1, "R");
-        } else if (this.algorithmMatrix[x][y + 1] === "x") {
+        } else if (this.matrix[x][y + 1] === "x") {
           return this.setPositionAndDirection(x, y + 1, "end");
         }
       } else {
@@ -225,7 +217,7 @@ export class AppService {
     this.nextStepDirection = direction;
     this.latestPosition = { x, y };
     this.visitedCoordinates = [...this.visitedCoordinates, this.latestPosition];
-    return this.algorithmMatrix[x][y];
+    return this.matrix[x][y];
   }
 
   checkIfWasHere(currentPosition: Coordinates): boolean {
