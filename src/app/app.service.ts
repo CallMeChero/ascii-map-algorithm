@@ -10,12 +10,14 @@ import { MapRequest } from './map-request';
 export class AppService {
 
   /* #region  Service variables */
+  recursiveCalls: number = 0;
   matrix: string[][] = new Array();
   nextStepDirection: string;
   latestPosition: Coordinates;
   letters: string = "";
   visitedCoordinates: Coordinates[] = [];
   /* #endregion */
+
 
   /* #region  Service methods */
 
@@ -54,8 +56,10 @@ export class AppService {
     const start = this.getStartCoordinates();
     if (isObservable(start)) return start;
     this.latestPosition = start;
-    while (this.nextStepDirection !== "end") {
+    let i = 0;
+    while (i < algorithm.length && this.nextStepDirection !== "end") {
       this.letters += this.getFurtherDirAndChar(this.latestPosition.x, this.latestPosition.y);
+      i++;
     }
     return from([this.letters]);
   }
@@ -98,6 +102,7 @@ export class AppService {
     if (startCoordinates.length > 1 || endOccurences.length > 1 || !startCoordinates.length || !endOccurences.length) {
       return throwError("Error")
     }
+
     this.letters = "@";
     return startCoordinates[0];
   }
@@ -136,10 +141,15 @@ export class AppService {
   }
 
   searchAllDirections(x, y) {
-    let charL = this.lookLeft(x, y);
-    let charR = this.lookRight(x, y);
-    let charT = this.lookTop(x, y);
-    let charB = this.lookBottom(x, y);
+    let charT;
+    let charB;
+    let charR;
+    let charL;
+
+    charL = this.lookLeft(x, y);
+    charR = this.lookRight(x, y);
+    charT = this.lookTop(x, y);
+    charB = this.lookBottom(x, y);
 
     if (!charL && !charR && !charT && !charB) {
       charL = this.lookLeft(x, y - 1);
