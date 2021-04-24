@@ -85,31 +85,37 @@ export class AppService {
    in case of error throw it
   */
   getStartCoordinates(): Coordinates | Observable<never> {
-    let startCoordinates = [];
-    let endOccurences = 0;
+    let startCoordinates: Coordinates[] = [];
+    let endOccurences: number[] = [];
     this.matrix.forEach((row, x) => {
-      const y = row.findIndex(element => element === "@");
-      const end = row.findIndex(element => element === "x");
-      if (y > -1) {
-        startCoordinates = [...startCoordinates, { x, y }];
+      const starts: number[] = this.countOccurences(row,"@");
+      const ends: number[] = this.countOccurences(row, "x");
+      if (starts.length === 1) {
+        startCoordinates = [...startCoordinates, { x: x, y: starts[0] }];
       }
-      if (end > -1) {
-        endOccurences++;
+      console.log(ends)
+      if(ends.length === 1) {
+        endOccurences = [...endOccurences, ends[0]];
       }
     });
     // in case of multiple starts or ends throw error
-    if (startCoordinates.length > 1) {
-      return throwError("Multiple starts")
-    } else if (!startCoordinates.length) {
-      return throwError("No start")
-    } else if (endOccurences === 0) {
-      return throwError("No end");
-    } else if (endOccurences > 1) {
-      return throwError("Multiple ends");
+    if (startCoordinates.length > 1 || endOccurences.length > 1 || !startCoordinates.length || !endOccurences.length) {
+      return throwError("Error")
     }
+
     this.letters = "@";
     return startCoordinates[0];
   }
+
+  countOccurences(array: string[],element: string): number[]{
+    let target: number[] = [];
+    for (let i = 0; i < array.length; i++){
+      if (array[i] === element) {  
+        target.push(i);
+      }
+    }
+    return target;
+  } 
 
   /*
     check if previous direction

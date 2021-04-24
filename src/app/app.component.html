@@ -15,11 +15,11 @@
           <form [formGroup]="appForm" (ngSubmit)="onSubmit()">
             <figure class="form-group">
               <label for="file">File</label>
-              <input type="file" id="file" (change)="handleFileInput($event.target.files)">
+              <input type="file" id="file" name="fileUpload" (change)="handleFileInput($event.target.files)">
             </figure>
             <figure class="form-group">
               <label for="textarea">Textarea</label>
-              <textarea id="textarea" rows="8" cols="57" formControlName="textArea"></textarea>
+              <textarea id="textarea" rows="8" cols="57" value="" name="textareaElement" formControlName="textArea"></textarea>
             </figure>
             <button type="submit" id="submitBtn">Submit form</button>
           </form>
