@@ -1,27 +1,163 @@
-# AsciiMapAlgorithm
+# Code Challenge
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.2.0.
+- Path following algorithm in ASCII Map
+- Find the position of character `@`
+- Follow the path, stop when character `x` is reached
 
-## Development server
+## Code Challenge
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+Write a piece of code that takes ASCII map as an input and outputs the collected letters and the list of characters of the travelled path.
 
-## Code scaffolding
+  - Input: 
+    - ASCII map (hard-coded, in a file, copied from a magic scroll - your choice)
+  - Output:
+    - Collected letters
+    - Path as characters
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+What we are looking for in the solution:
 
-## Build
+- clean code
+    - small methods/functions/classes
+    - good naming
+    - minimise code duplication
+- tests
+    - mandatory: acceptance tests with pasted examples from below
+    - bonus: microtests - small bits of logic should be tested separately (possible if clean code principles are observed, see above) ... for more on microtests see [this article](https://www.geepawhill.org/2020/06/12/microtest-tdd-more-definition)
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+## Valid maps
 
-## Running unit tests
+### Map 1 - a basic example
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```
+  @---A---+
+          |
+  x-B-+   C
+      |   |
+      +---+
+```
 
-## Running end-to-end tests
+Expected result: 
+- Letters ```ACB```
+- Path as characters ```@---A---+|C|+---+|+-B-x```
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+### Map 2 - go straight through intersections
 
-## Further help
+```
+  @
+  | +-C--+
+  A |    |
+  +---B--+
+    |      x
+    |      |
+    +---D--+
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Expected result: 
+- Letters ```ABCD```
+- Path as characters ```@|A+---B--+|+--C-+|-||+---D--+|x```
+
+### Map 3 - letters may be found on turns
+
+```
+  @---A---+
+          |
+  x-B-+   |
+      |   |
+      +---C
+```
+
+Expected result: 
+- Letters ```ACB```
+- Path as characters ```@---A---+|||C---+|+-B-x```
+
+### Map 4 - do not collect a letter from the same location twice
+
+```
+    +--B--+
+    |   +-B-+
+ @--A-+ | | |
+    | | +-+ A
+    +-+     |
+            x
+```
+
+Expected result: 
+- Letters ```ABBA``` (*not* `AABBBA`)
+- Path as characters ```@--A-+|+-+|A|+--B--+B|+-+|+-B-+|A|x```
+
+### Map 5 - keep direction, even in a compact space
+
+```
+ +-B-+
+ |  +C-+
+@A+ ++ D
+ ++    x
+```
+
+Expected result: 
+- Letters ```ABCD```
+- Path as characters ```@A+++A|+-B-+C+++C-+Dx```
+
+## Invalid maps:
+
+### Map 6 - no start
+
+```
+     -A---+
+          |
+  x-B-+   C
+      |   |
+      +---+
+```
+
+Expected result: Error
+
+### Map 7 - no end
+
+```
+   @--A---+
+          |
+    B-+   C
+      |   |
+      +---+
+```
+
+Expected result: Error
+
+### Map 8 - multiple starts
+
+```
+   @--A-@-+
+          |
+  x-B-+   C
+      |   |
+      +---+
+```
+
+Expected result: Error
+
+### Map 9 - multiple ends
+
+```
+   @--A---+
+          |
+  x-Bx+   C
+      |   |
+      +---+
+```
+
+Expected result: Error
+
+### Map 10 - T forks
+
+```
+        x-B
+          |
+   @--A---+
+          |
+     x+   C
+      |   |
+      +---+
+```
+
+Expected result: Error
