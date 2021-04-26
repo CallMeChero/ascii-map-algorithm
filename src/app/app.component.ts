@@ -34,7 +34,7 @@ export class AppComponent implements AfterViewInit {
           return EMPTY;
         })
       ))
-    ).subscribe(data => console.log(data))
+    ).subscribe(data => alert(data))
   }
 
   handleFileInput(files: FileList) {
