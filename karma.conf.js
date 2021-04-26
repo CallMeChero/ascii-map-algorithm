@@ -13,7 +13,14 @@ module.exports = function (config) {
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
-      clearContext: false // leave Jasmine Spec Runner output visible in browser
+      clearContext: false,
+      jasmine: {
+        random: false,
+        seed: '4321',
+        stopOnFailture: true,
+        failFast: true,
+        timeoutIntervale: 1000
+      }
     },
     browserConsoleLogOptions: {
       level: 'log',

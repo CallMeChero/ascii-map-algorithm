@@ -3,6 +3,7 @@ import { Observable, throwError, isObservable, from } from 'rxjs';
 import { Coordinates } from './coordinates';
 import { DIRECTIONS } from './direction.enum';
 import { MapRequest } from './map-request';
+import { MapResponse } from './map.response';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +25,7 @@ export class AppService {
     check if form data is file or textarea
     in case of form file read its content as string
   */
-  submitASCIIMap(formData: MapRequest): Observable<string> {
+  submitASCIIMap(formData: MapRequest): Observable<MapResponse> {
     this.setToInitial();
 
     if (formData.file) {
@@ -38,6 +39,7 @@ export class AppService {
       reader.readAsText(formData.file);
     } else {
       // textarea
+      if (!formData.textArea) return throwError("Textarea is empty")
       return this.parseAlgorithm(formData.textArea);
     }
   }
@@ -56,17 +58,15 @@ export class AppService {
     loop until next step direction is "E" -> x
     return observable of letters
   */
-  parseAlgorithm(algorithm: string): Observable<string> {
+  parseAlgorithm(algorithm: string): Observable<MapResponse> {
     this.formTwoDimensionalArray(algorithm);
     const start = this.getStartCoordinates();
     if (isObservable(start)) return start;
     this.latestPosition = start;
-    let i = 0;
-    while (i < algorithm.length && this.nextStepDirection !== "E") {
+    while (this.nextStepDirection !== "E") {
       this.letters += this.getFurtherDirAndChar(this.latestPosition.x, this.latestPosition.y);
-      i++;
     }
-    return from([this.letters]);
+    return from([{ letters: this.letters.replace(/[^A-Z ]/g, ""), pathAsCharacters: this.letters }]);
   }
 
   /*
@@ -136,21 +136,6 @@ export class AppService {
     } else {
       return this.searchAllDirections(x, y);
     }
-  }
-
-  searchAllDirections(x, y): string {
-    let charL = this.lookLeft(x, y);
-    let charR = this.lookRight(x, y);
-    let charT = this.lookTop(x, y);
-    let charB = this.lookBottom(x, y);
-
-    if (!charL && !charR && !charT && !charB) {
-      charL = this.lookLeft(x, y - 1);
-      charR = this.lookRight(x, y + 1);
-      charT = this.lookTop(x - 1, y);
-      charB = this.lookBottom(x + 1, y);
-    }
-    return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : "";
   }
 
   lookBottom(x: number, y: number, counter: number = 0): string | boolean {
@@ -238,6 +223,21 @@ export class AppService {
     return false;
   }
 
+  searchAllDirections(x, y): string {
+    let charL = this.lookLeft(x, y);
+    let charR = this.lookRight(x, y);
+    let charT = this.lookTop(x, y);
+    let charB = this.lookBottom(x, y);
+
+    if (!charL && !charR && !charT && !charB) {
+      charL = this.lookLeft(x, y - 1);
+      charR = this.lookRight(x, y + 1);
+      charT = this.lookTop(x - 1, y);
+      charB = this.lookBottom(x + 1, y);
+    }
+    return charL ? <string>charL : charB ? <string>charB : charT ? <string>charT : charR ? <string>charR : "";
+  }
+
   /*
     save direction for next step
     save latest position
@@ -260,6 +260,5 @@ export class AppService {
       return false;
     }
   }
-
   /* #endregion */
 }
