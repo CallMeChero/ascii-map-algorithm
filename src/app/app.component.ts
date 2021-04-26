@@ -40,7 +40,7 @@ export class AppComponent implements AfterViewInit {
           return EMPTY;
         })
       ))
-    ).subscribe(data => console.log(data))
+    ).subscribe(data => alert(`Letters: ${data.letters}\nPath as characters: ${data.pathAsCharacters}`))
   }
 
   // On change event for file upload
